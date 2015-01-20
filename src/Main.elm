@@ -6,6 +6,7 @@ import Color (..)
 import Graphics.Element (..)
 import Graphics.Collage (..)
 import Window
+import Mouse
 import Signal
 import Debug
 
@@ -24,14 +25,28 @@ init =
   , selected= Just 0
   }
 
+type Command
+  = Move (Float,Float)
+  | NoOp
+
+update : Command -> Model -> Model
+update c m = case c of
+  NoOp -> m
+  Move p' -> case m.selected of
+    Nothing -> m
+    Just i -> { m | points <- Array.set i p' m.points }
+
 background w h = [ rect (toFloat w) (toFloat h) |> filled darkOrange ]
 
 conv : Int -> Float -> Float
 conv w x = (x-0.5) * (toFloat w)
 
+deconv : Int -> Int -> Float
+deconv w x = (toFloat x) / (toFloat w)
+
 node w h sel i (x,y) = oval 35 35
   |> filled (if sel == (Just i) then lightBrown else darkBrown)
-  |> move (conv w x, conv h y)
+  |> move (conv w x, conv -h y)
 
 lookupPoint points p = case Array.get p points of
   Just p' -> p'
@@ -44,7 +59,7 @@ lookupEdge points (a,b) =
 
 drawEdge : Int -> Int -> ((Float,Float), (Float,Float)) -> Form
 drawEdge w h ((x1,y1),(x2,y2)) =
-  segment (conv w x1, conv h y1) (conv w x2, conv h y2)
+  segment (conv w x1, conv -h y1) (conv w x2, conv -h y2)
   |> traced (solid darkBrown)
 
 render : (Int,Int) -> Model -> Element
@@ -60,7 +75,11 @@ render (w,h) m =
   |> List.concat
   |> collage w h
 
+commands : Signal Command
+commands = Mouse.position
+  |> Signal.map2 (\(w,h) (x,y) -> Move (deconv w x, deconv h y)) Window.dimensions
+
 state : Signal Model
-state = Signal.constant init
+state = Signal.foldp update init commands
 
 main = Signal.map2 render Window.dimensions state
