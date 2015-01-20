@@ -27,6 +27,7 @@ init =
 
 type Command
   = Move (Float,Float)
+  | Release
   | NoOp
 
 update : Command -> Model -> Model
@@ -35,6 +36,7 @@ update c m = case c of
   Move p' -> case m.selected of
     Nothing -> m
     Just i -> { m | points <- Array.set i p' m.points }
+  Release -> { m | selected <- Nothing }
 
 background w h = [ rect (toFloat w) (toFloat h) |> filled darkOrange ]
 
@@ -76,8 +78,11 @@ render (w,h) m =
   |> collage w h
 
 commands : Signal Command
-commands = Mouse.position
-  |> Signal.map2 (\(w,h) (x,y) -> Move (deconv w x, deconv h y)) Window.dimensions
+commands = Signal.mergeMany
+  [ Mouse.position
+    |> Signal.map2 (\(w,h) (x,y) -> Move (deconv w x, deconv h y)) Window.dimensions
+  , Mouse.clicks |> Signal.map (\_ -> Release)
+  ]
 
 state : Signal Model
 state = Signal.foldp update init commands
