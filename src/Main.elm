@@ -5,6 +5,8 @@ import Array
 import Color (..)
 import Graphics.Element (..)
 import Graphics.Collage (..)
+import Window
+import Signal
 import Debug
 
 type alias Edge = (Int, Int)
@@ -56,4 +58,7 @@ render (w,h) m =
   |> List.concat
   |> collage w h
 
-main = render (800,600) init
+state : Signal Model
+state = Signal.constant init
+
+main = Signal.map2 render Window.dimensions state
