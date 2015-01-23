@@ -1,0 +1,3 @@
+[submodule "submodules/elm-svg"]
+	path = submodules/elm-svg
+	url = https://github.com/evancz/elm-svg.git

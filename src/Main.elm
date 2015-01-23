@@ -3,12 +3,14 @@ module Main where
 import List
 import Array
 import Color (..)
-import Graphics.Element (..)
-import Graphics.Collage (..)
+import Svg (..)
+import Svg.Attributes (..)
+import Svg.Attributes as A
 import Window
 import Mouse
 import Signal
 import Debug
+import Html (Html)
 
 type alias Edge = (Int, Int)
 type alias Point = (Float, Float)
@@ -38,17 +40,26 @@ update c m = case c of
     Just i -> { m | points <- Array.set i p' m.points }
   Release -> { m | selected <- Nothing }
 
-background w h = [ rect (toFloat w) (toFloat h) |> filled darkOrange ]
+background w h =
+  [ rect
+    [ fill "#fcaf3e"
+    , x "0", y "0"
+    , width (toString w), height (toString h)
+    ] []
+  ]
 
 conv : Int -> Float -> Float
-conv w x = (x-0.5) * (toFloat w)
+conv w x = (x) * (toFloat w)
 
 deconv : Int -> Int -> Float
 deconv w x = (toFloat x) / (toFloat w)
 
-node w h sel i (x,y) = oval 35 35
-  |> filled (if sel == (Just i) then lightBrown else darkBrown)
-  |> move (conv w x, conv -h y)
+node : Int -> Int -> Maybe Int -> (Int, (Float,Float)) -> Svg
+node w h sel (i,(x',y')) = circle
+  [ if sel == (Just i) then fill "#c17d11" else fill "#8f5902"
+  , cx (toString <| conv w x')
+  , cy (toString <| conv h y')
+  , r "25" ] []
 
 lookupPoint points p = case Array.get p points of
   Just p' -> p'
@@ -59,23 +70,30 @@ lookupEdge points (a,b) =
   , lookupPoint points b
   )
 
-drawEdge : Int -> Int -> ((Float,Float), (Float,Float)) -> Form
-drawEdge w h ((x1,y1),(x2,y2)) =
-  segment (conv w x1, conv -h y1) (conv w x2, conv -h y2)
-  |> traced (solid darkBrown)
+drawEdge : Int -> Int -> ((Float,Float), (Float,Float)) -> Svg
+drawEdge w h ((x1',y1'),(x2',y2')) = line
+  [ x1 (toString <| conv w x1')
+  , x2 (toString <| conv w x2')
+  , y1 (toString <| conv h y1')
+  , y2 (toString <| conv h y2')
+  , A.style "stroke: #8f5902"
+  ] []
 
-render : (Int,Int) -> Model -> Element
+render : (Int,Int) -> Model -> Html
 render (w,h) m =
   [ background w h
   , m.edges
     |> List.map (lookupEdge m.points)
     |> List.map (drawEdge w h)
   , m.points
-    |> Array.indexedMap (node w h m.selected)
-    |> Array.toList
+    |> Array.toIndexedList
+    |> List.map (node w h m.selected)
   ]
   |> List.concat
-  |> collage w h
+  |> svg
+    [ version "1.1", x "0", y "0"
+    , viewBox ("0 0 " ++ toString w ++ " " ++ toString h)
+    ]
 
 commands : Signal Command
 commands = Signal.mergeMany
