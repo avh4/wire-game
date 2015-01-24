@@ -23,7 +23,7 @@ type alias Model =
 
 init : Model
 init =
-  { edges= [(0,1), (0,2), (2,1), (3,1), (3,2), (3,0), (4,2), (4,0)]
+  { edges= [(0,1), (0,2), (0,3), (0,4), (1,2), (1,3), (1,4), (2,1), (3,1), (3,2), (3,0), (4,2), (4,0)]
   , points= Array.fromList [(0.5, 0.2), (0.3, 0.6), (0.8, 0.65), (0.6, 0.3), (0.4, 0.8)]
   , selected= Nothing
   }
@@ -101,12 +101,21 @@ intersects points a b = case (lookupEdge points a, lookupEdge points b) of
       (isLeft a1 a2 b1 `xor` isLeft a1 a2 b2)
       && (isLeft b1 b2 a1 `xor` isLeft b1 b2 a2)
 
-win : Array.Array Point -> List Edge -> Bool
-win points edges = case edges of
+noEdgesCross : Array.Array Point -> List Edge -> Bool
+noEdgesCross points edges = case edges of
   [] -> True
   (next::rest) -> case List.any (intersects points next) rest of
     True -> False
-    False -> win points rest
+    False -> noEdgesCross points rest
+
+noPointsOverlap points = case points of
+  [] -> True
+  (next::rest) -> case List.any ((==) next) rest of
+    True -> False
+    False -> noPointsOverlap rest
+
+win : Array.Array Point -> List Edge -> Bool
+win points edges = noPointsOverlap (Array.toList points) && noEdgesCross points edges
 
 render : (Int,Int) -> Model -> Html
 render (w,h) m =
