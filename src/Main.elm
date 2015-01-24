@@ -12,6 +12,7 @@ import Mouse
 import Signal
 import Debug
 import Html (Html)
+import Random as R
 
 type alias Edge = (Int, Int)
 type alias Point = (Float, Float)
@@ -21,10 +22,12 @@ type alias Model =
   , selected: Maybe Int
   }
 
-init : Model
-init =
+init : R.Seed -> Model
+init seed =
   { edges= [(0,1), (0,2), (0,3), (0,4), (1,2), (1,3), (1,4), (2,1), (3,1), (3,2), (3,0), (4,2), (4,0)]
-  , points= Array.fromList [(0.5, 0.2), (0.3, 0.6), (0.8, 0.65), (0.6, 0.3), (0.4, 0.8)]
+  , points= R.list 5 (R.pair (R.float 0.2 0.8) (R.float 0.2 0.8))
+    |> (flip R.generate) seed |> fst
+    |> Array.fromList
   , selected= Nothing
   }
 
@@ -32,6 +35,7 @@ type Command
   = Move (Float,Float)
   | Select Int
   | Release
+  | Reset R.Seed
   | NoOp
 
 update : Command -> Model -> Model
@@ -42,6 +46,7 @@ update c m = case c of
     Just i -> { m | points <- Array.set i p' m.points }
   Release -> { m | selected <- Nothing }
   Select i -> { m | selected <- Just i }
+  Reset seed -> init seed
 
 commandsChannel : Signal.Channel Command
 commandsChannel = Signal.channel NoOp
@@ -143,6 +148,6 @@ commands = Signal.mergeMany
   ]
 
 state : Signal Model
-state = Signal.foldp update init commands
+state = Signal.foldp update (init <| R.randomSeed) commands
 
 main = Signal.map2 render Window.dimensions state
