@@ -23,8 +23,8 @@ type alias Model =
 
 init : Model
 init =
-  { edges= [(0,1), (0,2), (2,1)]
-  , points= Array.fromList [(0.5, 0.2), (0.3, 0.6), (0.8, 0.65)]
+  { edges= [(0,1), (0,2), (2,1), (3,1), (3,2), (3,0), (4,2), (4,0)]
+  , points= Array.fromList [(0.5, 0.2), (0.3, 0.6), (0.8, 0.65), (0.6, 0.3), (0.4, 0.8)]
   , selected= Nothing
   }
 
@@ -46,9 +46,9 @@ update c m = case c of
 commandsChannel : Signal.Channel Command
 commandsChannel = Signal.channel NoOp
 
-background w h =
+background col w h =
   [ rect
-    [ fill "#fcaf3e"
+    [ fill col
     , x "0", y "0"
     , width (toString w), height (toString h)
     ] []
@@ -87,9 +87,31 @@ drawEdge w h ((x1',y1'),(x2',y2')) = line
   , A.style "stroke: #8f5902"
   ] []
 
+area2 : (Float,Float) -> (Float,Float) -> (Float,Float) -> Float
+area2 (ax,ay) (bx,by) (cx,cy) = (bx-ax)*(cy-ay) - (cx-ax)*(by-ay)
+
+isLeft a b c = area2 a b c > 0
+
+intersects : Array.Array Point -> Edge -> Edge -> Bool
+intersects points a b = case (lookupEdge points a, lookupEdge points b) of
+  ((a1,a2), (b1,b2)) -> if
+    | a1 == b1 || a1 == b2 -> False
+    | a2 == b1 || a2 == b2 -> False
+    | otherwise ->
+      (isLeft a1 a2 b1 `xor` isLeft a1 a2 b2)
+      && (isLeft b1 b2 a1 `xor` isLeft b1 b2 a2)
+
+win : Array.Array Point -> List Edge -> Bool
+win points edges = case edges of
+  [] -> True
+  (next::rest) -> case List.any (intersects points next) rest of
+    True -> False
+    False -> win points rest
+
 render : (Int,Int) -> Model -> Html
 render (w,h) m =
-  [ background w h
+  [ background "#fcaf3e" w h
+  , if win m.points m.edges then background "#affc3e" w h else []
   , m.edges
     |> List.map (lookupEdge m.points)
     |> List.map (drawEdge w h)
