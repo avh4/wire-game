@@ -6,6 +6,7 @@ import Color (..)
 import Svg (..)
 import Svg.Attributes (..)
 import Svg.Attributes as A
+import Svg.Events (..)
 import Window
 import Mouse
 import Signal
@@ -24,11 +25,12 @@ init : Model
 init =
   { edges= [(0,1), (0,2), (2,1)]
   , points= Array.fromList [(0.5, 0.2), (0.3, 0.6), (0.8, 0.65)]
-  , selected= Just 0
+  , selected= Nothing
   }
 
 type Command
   = Move (Float,Float)
+  | Select Int
   | Release
   | NoOp
 
@@ -39,6 +41,10 @@ update c m = case c of
     Nothing -> m
     Just i -> { m | points <- Array.set i p' m.points }
   Release -> { m | selected <- Nothing }
+  Select i -> { m | selected <- Just i }
+
+commandsChannel : Signal.Channel Command
+commandsChannel = Signal.channel NoOp
 
 background w h =
   [ rect
@@ -59,7 +65,9 @@ node w h sel (i,(x',y')) = circle
   [ if sel == (Just i) then fill "#c17d11" else fill "#8f5902"
   , cx (toString <| conv w x')
   , cy (toString <| conv h y')
-  , r "25" ] []
+  , r "20"
+  , onMouseDown (Signal.send commandsChannel (Select i))
+  ] []
 
 lookupPoint points p = case Array.get p points of
   Just p' -> p'
@@ -100,6 +108,7 @@ commands = Signal.mergeMany
   [ Mouse.position
     |> Signal.map2 (\(w,h) (x,y) -> Move (deconv w x, deconv h y)) Window.dimensions
   , Mouse.clicks |> Signal.map (\_ -> Release)
+  , Signal.subscribe commandsChannel
   ]
 
 state : Signal Model
