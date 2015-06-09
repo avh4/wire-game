@@ -2,16 +2,16 @@ module Main where
 
 import List
 import Array
-import Color (..)
-import Svg (..)
-import Svg.Attributes (..)
+import Color exposing (..)
+import Svg exposing (..)
+import Svg.Attributes exposing (..)
 import Svg.Attributes as A
-import Svg.Events (..)
+import Svg.Events exposing (..)
 import Window
 import Mouse
 import Signal
 import Debug
-import Html (Html)
+import Html exposing (Html)
 import Random as R
 
 type alias Edge = (Int, Int)
@@ -48,8 +48,8 @@ update c m = case c of
   Select i -> { m | selected <- Just i }
   Reset seed -> init seed
 
-commandsChannel : Signal.Channel Command
-commandsChannel = Signal.channel NoOp
+commandsChannel : Signal.Mailbox Command
+commandsChannel = Signal.mailbox NoOp
 
 background col w h =
   [ rect
@@ -71,7 +71,7 @@ node w h sel (i,(x',y')) = circle
   , cx (toString <| conv w x')
   , cy (toString <| conv h y')
   , r "20"
-  , onMouseDown (Signal.send commandsChannel (Select i))
+  , onMouseDown <| Signal.message commandsChannel.address (Select i)
   ] []
 
 lookupPoint points p = case Array.get p points of
@@ -145,10 +145,10 @@ commands = Signal.mergeMany
   [ Mouse.position
     |> Signal.map2 (\(w,h) (x,y) -> Move (deconv w x, deconv h y)) Window.dimensions
   , Mouse.clicks |> Signal.map (\_ -> Release)
-  , Signal.subscribe commandsChannel
+  , commandsChannel.signal
   ]
 
 state : Signal Model
-state = Signal.foldp update (init <| R.randomSeed) commands
+state = Signal.foldp update (init <| R.initialSeed 1) commands
 
 main = Signal.map2 render Window.dimensions state

@@ -4,15 +4,15 @@
     "repository": "https://github.com/avh4/wire-game.git",
     "license": "BSD3",
     "source-directories": [
-        "submodules/elm-svg/src",
         "src"
     ],
     "exposed-modules": [],
     "dependencies": {
-        "evancz/elm-html": "1.0.0 <= v < 2.0.0",
-        "evancz/virtual-dom": "1.2.0 <= v < 2.0.0",
-        "deadfoxygrandpa/Elm-Test": "1.0.2 <= v < 2.0.0",
-        "elm-lang/core": "1.1.0 <= v < 2.0.0",
-        "maxsnew/IO": "1.0.0 <= v < 2.0.0"
-    }
+        "deadfoxygrandpa/Elm-Test": "1.0.4 <= v < 2.0.0",
+        "elm-lang/core": "2.0.1 <= v < 3.0.0",
+        "evancz/elm-html": "3.0.0 <= v < 4.0.0",
+        "evancz/elm-svg": "1.0.2 <= v < 2.0.0",
+        "maxsnew/IO": "1.0.1 <= v < 2.0.0"
+    },
+    "elm-version": "0.15.0 <= v < 0.16.0"
 }
